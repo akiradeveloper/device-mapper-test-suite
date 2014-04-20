@@ -32,7 +32,6 @@ module WriteboostTests
   RUBY = 'ruby-2.1.1.tar.gz'
   RUBY_LOCATION = "http://cache.ruby-lang.org/pub/ruby/2.1/ruby-2.1.1.tar.gz"
 
-
   def grab_ruby
     unless File.exist?(RUBY)
       STDERR.puts "grabbing ruby archive from web"
@@ -167,6 +166,100 @@ module WriteboostTests
         ps.verify(0, 1)
         st2 = WriteboostStatus.from_raw_status(s.wb.status)
         st2.stat(0, 1, 1, 1).should > st1.stat(0, 1, 1, 1)
+      end
+    end
+  end
+
+  def test_device_failure
+    # Making the cache device size smaller to shorten the
+    # execution time and repeat tests
+    opts = {
+      :cache_sz => meg(16)
+    }
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts);
+    s.activate_support_devs() do
+      s.cleanup_cache
+
+      def backing_table_failable(s)
+        up = rand(1..3)
+        down = 1
+        DM::Table.new(DM::FlakeyTarget.new(dev_size(s.backing_dev), s.slow_dev_name, 0, up, down))
+      end
+
+      def cache_table_failable(s)
+        up = rand(3..10)
+        down = 1
+        offset = 0 # TODO parse linear table
+        DM::Table.new(DM::FlakeyTarget.new(dev_size(s.cache_dev), s.fast_dev_name, offset, up, down))
+      end
+
+      def wrap_backing_dev(s, new_table)
+        s.backing_dev.pause do
+          s.backing_dev.load(new_table)
+        end
+      end
+
+      def wrap_cache_dev(s, new_table)
+        s.cache_dev.pause do
+          s.cache_dev.load(new_table)
+        end
+      end
+
+      backing_table_old = s.backing_dev.table
+      cache_table_old = s.cache_dev.table
+
+      mount_dir = "./mnt_wb"
+
+      ProcessControl.run("dmesg -C")
+      n = 5 # TODO
+      n.times do |i|
+        # Activate wb device and fails suddenly
+        # and then see if no corruption, either filesystem or compilation, occurs.
+        s.activate_top_level(true) do
+          fs = FS::file_system(:xfs, s.wb)
+          fs.format if i == 0
+
+          release = lambda {
+            p "c"
+            # We need to unwrap the flakey shell
+            # otherwise xfs_repair fails in case of
+            # failing metadata I/O in the compilation above.
+            # p "d"
+            p backing_table_old
+            # s.backing_dev.load(backing_table_old)
+            wrap_backing_dev s, backing_table_old
+            p cache_table_old
+            # s.cache_dev.load(cache_table_old)
+            wrap_cache_dev s, cache_table_old
+            p "e"
+            p s.backing_dev.table
+            p s.cache_dev.table
+
+            fs.umount
+          }
+
+          fs.with_mount(mount_dir, {}, release) do
+          # fs.with_mount(mount_dir) do
+            p s.backing_dev.table
+            p s.cache_dev.table
+
+            if i % 2 == 0
+              wrap_backing_dev s, backing_table_failable(s)
+            else
+              wrap_cache_dev s, cache_table_failable(s)
+            end
+
+            p "a"
+            Dir.chdir(mount_dir) do
+              p "b"
+              begin
+                command = "fio -name=test -size=128MB -direct=1 -rw=randrw -runtime=30 -numjobs=4 -bs=4k"
+                ProcessControl.run(command)
+              rescue  
+              end
+            end
+          end
+        end
       end
     end
   end

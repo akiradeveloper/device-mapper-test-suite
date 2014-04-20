@@ -81,6 +81,7 @@ module Utils
     begin
       yield(f)
     ensure
+      p "ensure: with_temp_file"
       f.close
       f.unlink
     end

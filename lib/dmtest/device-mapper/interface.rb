@@ -10,9 +10,13 @@ module DM
     # FIXME: duplication
     def load(path, table)
       Utils::with_temp_file('dm-table') do |f|
-        debug "writing table: #{table.to_embed}"
+        p "1a"
+        # debug "writing table: #{table.to_embed}"
+        p "1b"
         f.puts table.to_s
+        p "1c"
         f.flush
+        p "1d"
         ProcessControl.run("dmsetup load #{strip(path)} #{f.path}")
       end
     end

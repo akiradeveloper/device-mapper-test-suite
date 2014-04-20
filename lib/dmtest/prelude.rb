@@ -5,6 +5,7 @@ module Kernel
     begin
       r = yield(v)
     ensure
+      p "bracket release"
       release.call(v)
     end
     r
@@ -15,6 +16,7 @@ module Kernel
     begin
       r = yield
     ensure
+      p "bracket_ release"
       release.call
     end
     r

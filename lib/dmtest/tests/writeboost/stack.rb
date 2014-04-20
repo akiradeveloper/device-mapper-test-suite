@@ -29,7 +29,11 @@ class WriteboostStack
                 :plog_dev, # not used now
                 :wb,
                 :opts, # :: {}
-                :table_extra_args # :: {}
+                :table_extra_args, # :: {}
+                :fast_dev_name,
+                :fast_tvm,
+                :slow_dev_name,
+                :slow_tvm
 
   def initialize(dm, slow_dev_name, fast_dev_name, opts = {})
     @dm = dm

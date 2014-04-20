@@ -28,12 +28,12 @@ module FS
       ProcessControl.run("umount #{@mount_point}")
       Pathname.new(@mount_point).delete
       @mount_point = nil
-      check
+      # check
     end
 
-    def with_mount(mount_point, opts = Hash.new, &block)
+    def with_mount(mount_point, opts = Hash.new, release = lambda {umount}, &block)
       mount(mount_point, opts)
-      bracket_(lambda {umount}, &block)
+      bracket_(release, &block)
     end
 
     def check
