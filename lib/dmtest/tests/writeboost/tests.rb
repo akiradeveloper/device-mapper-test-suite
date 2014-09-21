@@ -256,6 +256,40 @@ module WriteboostTests
     end
   end
 
+  # This test aims to pass unlikely path in invalidate_prev_cache()
+  def test_invalidate_prev_cache
+    @param[0] = debug_scale? ? 1 : 32
+
+    # 50% of writes hit and then causes a writeback that blocks
+    opts = {
+      :backing_sz => 2 * (128 - 1) * k(4),
+      :cache_sz => meg(1) + 2 * 128 * k(4), # 1M (super block) + 2 segments
+    }
+
+    # 512B random write
+    def run_fio(dev)
+      ProcessControl.run("fio --name=test --filename=#{dev.path} --rw=randwrite --ioengine=libaio --direct=1 --size=#{@param[0]}m --bs=512")
+    end
+
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      s.cleanup_cache
+
+      # Stop automated writeback
+      s.table_extra_args = {
+        :segment_size_order => 10,
+        :enable_writeback_modulator => 0,
+        :allow_writeback => 0,
+      }
+
+      s.activate_top_level(true) do
+        report_time("", STDERR) do
+          run_fio(s.wb)
+        end
+      end
+    end
+  end
+
   #--------------------------------
 
   def test_git_extract_cache_quick
