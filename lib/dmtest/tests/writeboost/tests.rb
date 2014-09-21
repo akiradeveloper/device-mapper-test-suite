@@ -255,30 +255,6 @@ module WriteboostTests
       end
     end
   end
-  def create_rand_seq(devsize, amount, size_range)
-    result = []
-    remain = amount
-    while remain > 0 do
-      start = rand(devsize)
-      request_size = rand(size_range)
-      consume = [remain, devsize - start, request_size].min
-      remain -= consume
-      buf = Array.new(512 * consume, 0).map { |_| rand(2) }.join
-      result << [start, consume, buf]
-    end
-    result
-  end
-
-  def write_seq(path, seq)
-    io = open(path, "wb")
-    seq.each do |e|
-      from, len, buf = e
-      io.sysseek(from * 512, IO::SEEK_SET)
-      io.syswrite(buf)
-    end
-    io.close()
-    drop_caches
-  end
 
   # This test aims to pass unlikely path in invalidate_prev_cache()
   def test_invalidate_prev_cache
@@ -292,9 +268,7 @@ module WriteboostTests
 
     # 512B random write
     def run_fio(dev)
-      # ProcessControl.run("fio --name=test --filename=#{dev.path} --rw=randwrite --ioengine=libaio --direct=1 --size=#{@param[0]}m --bs=512")
-      seq = create_rand_seq(2 * 127 * k(4), meg(@param[0]), 1..7)
-      write_seq(dev.path, seq)
+      ProcessControl.run("fio --name=test --filename=#{dev.path} --rw=randwrite --ioengine=libaio --direct=1 --size=#{@param[0]}m --bs=512")
     end
 
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
