@@ -260,15 +260,17 @@ module WriteboostTests
   def test_invalidate_prev_cache
     @param[0] = debug_scale? ? 1 : 32
 
-    # 50% of writes hit and then causes a writeback that blocks
     opts = {
-      :backing_sz => 2 * (128 - 1) * k(4),
-      :cache_sz => meg(1) + 2 * 128 * k(4), # 1M (super block) + 2 segments
+      # The 127th writes incurs queue_current_buffer().
+      # Others run into unfavorable path to write back the preivous cache on cache device.
+      :backing_sz => 1 * (128 - 1) * k(4),
+      :cache_sz => meg(1) + 3 * 128 * k(4), # 1M (super block) + 2 segments
     }
 
-    # 512B random write
+    # 512B stride write repeats for 30sec.
+    # The offset increases by 4k (E.g. 0, 4096, 8192, ...)
     def run_fio(dev)
-      ProcessControl.run("fio --name=test --filename=#{dev.path} --rw=randwrite --ioengine=libaio --direct=1 --size=#{@param[0]}m --bs=512")
+      system("fio --name=test --time_based --runtime=30 --filename=#{dev.path} --rw=write:3584 --ioengine=libaio --direct=1 --bs=512")
     end
 
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
@@ -280,12 +282,17 @@ module WriteboostTests
         :segment_size_order => 10,
         :enable_writeback_modulator => 0,
         :allow_writeback => 0,
+        :nr_max_batched_writeback => 1,
       }
 
       s.activate_top_level(true) do
         report_time("", STDERR) do
           run_fio(s.wb)
         end
+
+        # All writes except the first few handreds result in write hit on the cache device
+        # which leads to unfavorable foreground writeback. To see the stat, uncomment this line.
+        # print WriteboostStatus.from_raw_status(s.wb.status).format_stat_table
       end
     end
   end
