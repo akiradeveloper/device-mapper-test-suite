@@ -260,17 +260,25 @@ module WriteboostTests
   def test_sync_writes
     @param[0] = debug_scale? ? 1 : 4
 
-    def run(s, sso)
+    def run(s)
       s.table_extra_args = {
-        :segment_size_order => sso,
         :enable_writeback_modulator => 1,
       }
       s.cleanup_cache
       s.activate_top_level(true) do
-        report_time("segment_size_order=#{sso}", STDERR) do
-          # Alway submit barriers per one 512B write
-          ProcessControl.run("fio --name=test --filename=#{s.wb.path} --rw=randwrite --ioengine=sync --direct=1 --fsync=1 --write_barrier=1 --io_limit=#{@param[0]}M --bs=512")
-          s.drop_caches # Wait until all cache blocks becomes clean.
+        fs = FS::file_system(:xfs, s.wb)
+        fs.format
+        dir = "./fio_test"
+        fs.with_mount(dir) do
+          report_time("", STDERR) do
+            Dir.chdir(dir) do
+              # Alway submit barriers per one 512B write
+              ProcessControl.run("fio --name=test --filename=#{s.wb.path} --rw=randwrite --ioengine=libaio --direct=1 --fsync=1 --write_barrier=1 --io_limit=#{@param[0]}M --bs=512")
+            end
+            ProcessControl.run("sync")
+            drop_caches
+            s.drop_caches # Wait until all cache blocks becomes clean.
+          end
         end
       end
     end
@@ -281,9 +289,7 @@ module WriteboostTests
 
     s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
     s.activate_support_devs do
-      [4, 7, 10].each do |sso|
-        run(s, sso)
-      end
+      run(s)
     end
   end
 
