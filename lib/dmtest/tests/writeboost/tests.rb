@@ -256,6 +256,37 @@ module WriteboostTests
     end
   end
 
+  # This test shows how badly Writeboost performs with all-sync writes.
+  def test_sync_writes
+    @param[0] = debug_scale? ? 1 : 4
+
+    def run(s, sso)
+      s.table_extra_args = {
+        :segment_size_order => sso,
+        :enable_writeback_modulator => 1,
+      }
+      s.cleanup_cache
+      s.activate_top_level(true) do
+        report_time("segment_size_order=#{sso}", STDERR) do
+          # Alway submit barriers per one 512B write
+          ProcessControl.run("fio --name=test --filename=#{s.wb.path} --rw=randwrite --ioengine=sync --direct=1 --fsync=1 --write_barrier=1 --io_limit=#{@param[0]}M --bs=512")
+          s.drop_caches # Wait until all cache blocks becomes clean.
+        end
+      end
+    end
+
+    opts = {
+      :cache_sz => meg(2) # The cache device is very small.
+    }
+
+    s = @stack_maker.new(@dm, @data_dev, @metadata_dev, opts)
+    s.activate_support_devs do
+      [4, 7, 10].each do |sso|
+        run(s, sso)
+      end
+    end
+  end
+
   #--------------------------------
 
   def test_git_extract_cache_quick
