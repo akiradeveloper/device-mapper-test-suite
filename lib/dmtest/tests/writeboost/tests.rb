@@ -89,14 +89,9 @@ module WriteboostTests
       ruby = "ruby-2.1.1"
       mount_dir = "./ruby_mount_1"
 
-      # for testing segment size order < 10
-      # to dig up codes that depend on the order is 10
-      sso = 9
-
       # (1) first extracts the archive in the directory
       # no writeback - all dirty data is on the cache device
       no_writeback_args = {
-        :segment_size_order => sso,
         :enable_writeback_modulator => 0,
         :allow_writeback => 0
       }
@@ -114,7 +109,6 @@ module WriteboostTests
       end
 
       yes_writeback_args = {
-        :segment_size_order => sso,
         :enable_writeback_modulator => 1,
         :allow_writeback => 0,
         :read_cache_threshold => 31
@@ -153,7 +147,6 @@ module WriteboostTests
     s.activate_support_devs() do
       s.cleanup_cache
       args = {
-        :segment_size_order => 10,
         :enable_writeback_modulator => 0,
         :allow_writeback => 0,
       }
@@ -291,7 +284,6 @@ module WriteboostTests
       s.cleanup_cache
       # Stop automated writeback
       s.table_extra_args = {
-        :segment_size_order => 10,
         :enable_writeback_modulator => 0,
         :allow_writeback => 0,
         :nr_max_batched_writeback => 1,

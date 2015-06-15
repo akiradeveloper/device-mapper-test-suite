@@ -114,9 +114,6 @@ class WriteboostStack
   end
 
   class Args
-    OPTIONALS = [:segment_size_order,
-                 :nr_rambuf_pool,
-    ]
     TUNABLES = [:allow_writeback,
                 :enable_writeback_modulator,
                 :writeback_threshold,
@@ -127,19 +124,10 @@ class WriteboostStack
     ]
     def pop
       k, v = @opts.first
-      if OPTIONALS.include? k
-        @optionals[k] = v
-        @opts.delete k
-        return
-      end
-      if TUNABLES.include? k
-        @tunables[k] = v
-        @opts.delete k
-        return
-      end
+      @tunables[k] = v
+      @opts.delete k
     end
     def initialize(opts)
-      @optionals = {}
       @tunables = {}
 
       @opts = opts.clone
@@ -156,13 +144,7 @@ class WriteboostStack
       a
     end
     def to_a
-      a = []
-      a += h_to_a(@optionals) unless @optionals.empty?
-      unless @tunables.empty?
-        a += [0] if @optionals.empty?
-        a += h_to_a(@tunables)
-      end
-      a
+      h_to_a(@tunables) unless @tunables.empty?
     end
   end
 end
