@@ -142,7 +142,11 @@ class WriteboostStack
       a
     end
     def to_a
-      h_to_a(@tunables) unless @tunables.empty?
+      if @tunables.empty?
+        []
+      else
+        h_to_a(@tunables)
+      end
     end
   end
 end
