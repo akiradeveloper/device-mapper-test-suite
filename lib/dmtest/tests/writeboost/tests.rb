@@ -184,7 +184,7 @@ module WriteboostTests
     s.activate_support_devs do
       s.cleanup_cache
       args = {
-        :enable_writeback_modulator => 1,
+        :writeback_threshold => 70,
         :read_cache_threshold => 31, # read-caching enabled
       }
       s.table_extra_args = args
@@ -300,7 +300,7 @@ module WriteboostTests
     @param[0] = debug_scale? ? 1 : 4
     def run(s)
       s.table_extra_args = {
-        :enable_writeback_modulator => 1,
+        :writeback_threshold => 70,
       }
       s.cleanup_cache
       s.activate_top_level(true) do
