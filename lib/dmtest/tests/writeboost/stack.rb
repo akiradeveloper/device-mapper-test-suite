@@ -114,9 +114,7 @@ class WriteboostStack
   end
 
   class Args
-    TUNABLES = [:allow_writeback,
-                :enable_writeback_modulator,
-                :writeback_threshold,
+    TUNABLES = [:writeback_threshold,
                 :nr_max_batched_writeback,
                 :update_sb_record_interval,
                 :sync_data_interval,

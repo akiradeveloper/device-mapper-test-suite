@@ -92,8 +92,7 @@ module WriteboostTests
       # (1) first extracts the archive in the directory
       # no writeback - all dirty data is on the cache device
       no_writeback_args = {
-        :enable_writeback_modulator => 0,
-        :allow_writeback => 0
+        :writeback_threshold => 0,
       }
       s.table_extra_args = no_writeback_args
       s.activate_top_level(true) do
@@ -109,8 +108,7 @@ module WriteboostTests
       end
 
       yes_writeback_args = {
-        :enable_writeback_modulator => 1,
-        :allow_writeback => 0,
+        :writeback_threshold => 70,
         :read_cache_threshold => 31
       }
       s.table_extra_args = yes_writeback_args
@@ -147,8 +145,7 @@ module WriteboostTests
     s.activate_support_devs() do
       s.cleanup_cache
       args = {
-        :enable_writeback_modulator => 0,
-        :allow_writeback => 0,
+        :writeback_threshold => 0,
       }
       s.table_extra_args = args
       s.activate_top_level(true) do
@@ -284,8 +281,7 @@ module WriteboostTests
       s.cleanup_cache
       # Stop automated writeback
       s.table_extra_args = {
-        :enable_writeback_modulator => 0,
-        :allow_writeback => 0,
+        :writeback_threshold => 0,
         :nr_max_batched_writeback => 1,
       }
       s.activate_top_level(true) do
@@ -443,8 +439,7 @@ module WriteboostTests
     s.activate_support_devs do
       s.cleanup_cache
       s.table_extra_args = {
-        :enable_writeback_modulator => 1,
-        :allow_writeback => 1
+        :writeback_threshold => 70,
       }
 
       s.activate_top_level(true) do
@@ -462,8 +457,7 @@ module WriteboostTests
     s.activate_support_devs do
       s.cleanup_cache
       s.table_extra_args = {
-        :enable_writeback_modulator => 1,
-        :allow_writeback => 1
+        :writeback_threshold => 70,
       }
 
       s.activate_top_level(true) do
@@ -481,8 +475,7 @@ module WriteboostTests
     s.activate_support_devs do
       s.cleanup_cache
       s.table_extra_args = {
-        :enable_writeback_modulator => 1,
-        :allow_writeback => 1
+        :writeback_threshold => 70,
       }
 
       s.activate_top_level(true) do
@@ -500,8 +493,7 @@ module WriteboostTests
     s.activate_support_devs do
       s.cleanup_cache
       s.table_extra_args = {
-        :enable_writeback_modulator => 1,
-        :allow_writeback => 1
+        :writeback_threshold => 70,
       }
 
       s.activate_top_level(true) do
@@ -559,8 +551,7 @@ module WriteboostTests
       s.cleanup_cache
       # Migration is off
       s.table_extra_args = {
-        :enable_writeback_modulator => 0,
-        :allow_writeback => 0
+        :writeback_threshold => 0,
       }
       s.activate_top_level(true) do
         system "fio --name=test --filename=#{s.wb.path} --rw=randwrite --ioengine=libaio --direct=1 --size=#{@param[0]}m --ba=4k --bs=4k --iodepth=32"
